@@ -38,44 +38,70 @@ public class VentaService {
     }
     
     public Venta createItem(VentaDTO ventaDTO) {
-    	return this.saveItem(ventaDTO);
+    	Venta venta = new Venta();
+        Producto producto = productoService.getItemById(ventaDTO.getProducto_id())
+    			.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+		Persona persona = personaService.getItemById(ventaDTO.getPersona_id())
+                .orElseThrow(() -> new RuntimeException("Persona no encontrada"));
+		
+//    	int nuevaCantidad = producto.getCantidad() - ventaDTO.getCantidad();
+//    	producto.setCantidad(nuevaCantidad);
+//    	productoService.updateItem(producto.getId(), producto);
+    	decProductoCantidad(producto, ventaDTO.getCantidad());
+    	
+    	venta.setProducto(producto);
+    	venta.setPersona(persona);
+    	venta.setPrecio(ventaDTO.getPrecio());
+    	venta.setCantidad(ventaDTO.getCantidad());
+    	venta.setFechaHora(LocalDateTime.now());
+    	
+    	return ventaRepository.save(venta);
     }
 
     public Venta updateItem(Long id, VentaDTO ventaDTO) {
-    	ventaDTO.setId(id);
-        return this.saveItem(ventaDTO);
-    }
-    
-    @Transactional
-    public Venta saveItem(VentaDTO ventaDTO) {
-    	Producto producto = productoService.getItemById(ventaDTO.getProducto_id())
+        Venta venta = this.getItemById(id)
+        		.orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+        Producto producto = productoService.getItemById(ventaDTO.getProducto_id())
     			.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-    	Persona persona = personaService.getItemById(ventaDTO.getPersona_id())
+		Persona persona = personaService.getItemById(ventaDTO.getPersona_id())
                 .orElseThrow(() -> new RuntimeException("Persona no encontrada"));
-        
-    	Venta venta = new Venta();
-        venta.setProducto(producto);
-        venta.setPersona(persona);
-        venta.setPrecio(ventaDTO.getPrecio());
-        venta.setCantidad(ventaDTO.getCantidad());
-        venta.setFechaHora(LocalDateTime.now());
-        
-        Venta savedVenta = ventaRepository.save(venta);
-        
-        decreaseProductQuantity(producto, venta.getCantidad());
-
-        return savedVenta;
+    	
+//    	int diferencia = ventaDTO.getCantidad() - venta.getCantidad();
+//    	int nuevaCantidad = producto.getCantidad() - diferencia;
+//    	producto.setCantidad(nuevaCantidad);
+//    	productoService.updateItem(producto.getId(), producto);
+    	decProductoCantidad(producto, ventaDTO.getCantidad(), venta.getCantidad());
+    	
+    	venta.setProducto(producto);
+    	venta.setPersona(persona);
+    	
+    	if (ventaDTO.getPrecio() != null) {
+    		venta.setPrecio(ventaDTO.getPrecio());
+    	}
+    	if (ventaDTO.getCantidad() != null) {
+    		venta.setCantidad(ventaDTO.getCantidad());
+    	}
+    	venta.setFechaHora(LocalDateTime.now());
+    	
+    	return ventaRepository.save(venta);
     }
 
     public void deleteItemById(Long id) {
         ventaRepository.deleteById(id);
     }
     
-    private void decreaseProductQuantity(Producto producto, int quantity) {
-        if (producto.getCantidad() < quantity) {
+    private void decProductoCantidad(Producto producto, int cantidad, int cantidadAnterior) {
+        if (producto.getCantidad() < cantidad) {
             throw new RuntimeException("Cantidad insuficiente para el producto " + producto.getId());
         }
-        producto.setCantidad(producto.getCantidad() - quantity);
+        
+        int diferencia = cantidad - cantidadAnterior;
+        int nuevaCantidad = producto.getCantidad() - diferencia;
+        producto.setCantidad(nuevaCantidad);
         productoService.updateItem(producto.getId(), producto);
+    }
+    
+    private void decProductoCantidad(Producto producto, int cantidad) {
+    	decProductoCantidad(producto, cantidad, 0);
     }
 }
