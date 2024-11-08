@@ -6,19 +6,22 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.example.tienda101.productos.domain.Producto;
+import com.example.tienda101.productos.domain.ProductoDataService;
 import com.example.tienda101.productos.domain.ProductoRepository;
 
 @Service
 public class ProductoService {
 
 	private final ProductoRepository productoRepository;
+	private final ProductoDataService productoDataService;
 
-	public ProductoService(ProductoRepository productoRepository) {
+	public ProductoService(ProductoRepository productoRepository, ProductoDataService productoDataService) {
 		this.productoRepository = productoRepository;
+		this.productoDataService = productoDataService;
 	}
 
 	public List<Producto> getItems() {
-		return productoRepository.findAll();
+		return productoDataService.findAll();
 	}
 
 	public Optional<Producto> getItemById(Long id) {
